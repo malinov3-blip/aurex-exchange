@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="gold">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUREX | Premium Crypto Exchange</title>
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://s3.tradingview.com/tv.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/otpauth@9.1.4/dist/otpauth.umd.min.js"></script>
+<style>
+    :root {
+        --up: #0ecb81; --down: #f6465d;
+        --gold: #f5d76e; --gold-dark: #b8860b; --gold-gradient: linear-gradient(135deg, #f5d76e, #d4af37, #b8860b);
+        --bg-dark: #050505; --bg-panel: rgba(25, 25, 25, 0.6);
+        --text-main: #ffffff; --text-muted: #a0a0a0;
+        --border-glass: rgba(255, 255, 255, 0.1);
+        --border-gold: rgba(212, 175, 55, 0.3);
+        --btn-text: #000;
+        --glass-blur: blur(20px);
+    }
+    [data-theme="light"] {
+        --bg-dark: #f2f2f7; --bg-panel: rgba(255, 255, 255, 0.65);
+        --text-main: #1c1c1e; --text-muted: #8e8e93;
+        --border-glass: rgba(0, 0, 0, 0.05);
+        --border-gold: rgba(184, 134, 11, 0.3);
+        --down: #d32f2f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { 
+        background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 13px;
+        background-image: radial-gradient(circle at top left, rgba(212,175,55,0.15) 0%, transparent 40%), radial-gradient(circle at bottom right, rgba(212,175,55,0.05) 0%, transparent 40%);
+    }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+    select, option { background: #1c1c1e; color: #fff; }
+    [data-theme="light"] select, [data-theme="light"] option { background: #fff; color: #000; }
+    
+    .btn { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s ease; }
+    .btn-primary { background: var(--gold-gradient); color: var(--btn-text); box-shadow: 0 4px 15px rgba(212,175,55,0.2); }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-buy { background: var(--up); color: #fff; }
+    .btn-buy:hover { background: #0ba768; }
+    .btn-sell { background: var(--down); color: #fff; }
+    .btn-sell:hover { filter: brightness(0.9); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-glass); color: var(--text-main); }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    
+    .btn-danger-soft { background: rgba(246, 70, 93, 0.1); border: 1px solid rgba(246, 70, 93, 0.3); color: var(--down); }
+    .btn-danger-soft:hover { background: rgba(246, 70, 93, 0.2); }
+
+    .input-group { margin-bottom: 12px; }
+    .input-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 11px; font-weight: 500; }
+    .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); color: var(--text-main); font-size: 13px; outline: none; transition: 0.2s; resize: none; }
+    [data-theme="light"] .input-group input, [data-theme="light"] .input-group select, [data-theme="light"] .input-group textarea { background: #fff; }
+    .input-group input:focus, .input-group textarea:focus { border-color: var(--gold); box-shadow: 0 0 10px rgba(212,175,55,0.2); }
+
+    #welcome-screen, #verify-screen { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 80px 20px 30px; overflow-y: auto; position: relative; z-index: 999; }
+    .lang-box { position: absolute; top: 20px; right: 20px; z-index: 50; }
+    .lang-select { background: rgba(0,0,0,0.5); color: var(--gold); border: 1px solid var(--border-gold); padding: 6px 12px; border-radius: 8px; cursor: pointer; backdrop-filter: var(--glass-blur); }
+    .welcome-container { max-width: 400px; width: 100%; text-align: center; }
+    .logo-large { font-size: 56px; font-weight: 900; letter-spacing: 8px; margin-bottom: 10px; background: var(--gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px rgba(212,175,55,0.4)); }
+    .auth-tabs { display: flex; background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px; margin-bottom: 15px; border: 1px solid var(--border-glass); backdrop-filter: var(--glass-blur); }
+    .auth-tab { flex: 1; padding: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 8px; font-weight: 600; transition: 0.2s; }
+    .auth-tab.active { background: var(--bg-panel); color: var(--gold); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    .auth-form { background: var(--bg-panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 30px; border-radius: 16px; border: 1px solid var(--border-glass); text-align: left; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .auth-form h3 { margin-bottom: 20px; text-align: center; color: var(--gold); font-weight: 600; }
+
+    #dashboard { display: none; flex-direction: column; height: 100vh; width: 100vw; }
+    header { background: var(--bg-panel); backdrop-filter: var(--glass-blur); height: 60px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-glass); flex-shrink: 0; padding: 0 20px; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 30px; }
+    .logo { font-size: 22px; font-weight: 900; color: var(--gold); cursor: pointer; letter-spacing: 1px; }
+    .nav-links { display: flex; gap: 5px; }
+    .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; cursor: pointer; padding: 8px 15px; border-radius: 8px; font-weight: 600; transition: 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); background: rgba(212,175,55,0.1); }
+    .header-right { display: flex; align-items: center; gap: 15px; }
+    
+    .online-badge { font-size: 11px; color: var(--up); display: flex; align-items: center; gap: 6px; background: rgba(14,203,129,0.1); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(14,203,129,0.2); }
+    .online-dot { width: 6px; height: 6px; background: var(--up); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; box-shadow: 0 0 0 0 rgba(14,203,129,0.4); } 70% { opacity: 0.5; box-shadow: 0 0 0 6px rgba(14,203,129,0); } 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(14,203,129,0); } }
+    
+    .user-balance { font-weight: 700; color: var(--gold); font-size: 15px; }
+    .user-menu { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: 0.2s; }
+    .user-menu:hover { background: rgba(255,255,255,0.05); }
+    .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--gold-gradient); color: var(--btn-text); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    #ad-banner { background: rgba(0,136,204,0.08); backdrop-filter: var(--glass-blur); border-bottom: 1px solid rgba(0,136,204,0.2); padding: 4px 15px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .ad-content { display: flex; align-items: center; gap: 10px; }
+    .ad-avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #0088cc; }
+    .ad-text h4 { font-size: 11px; color: var(--text-main); margin-bottom: 0; font-weight: 600; }
+    .ad-text p { font-size: 10px; color: var(--text-muted); }
+    .ad-btn { background: #0088cc; color: #fff; text-decoration: none; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 11px; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
+    .ad-btn:hover { background: #006699; transform: scale(1.02); }
+    .ad-close { cursor: pointer; color: var(--text-muted); margin-left: 10px; font-size: 14px; }
+
+    .terminal-layout { display: grid; grid-template-columns: 260px 1fr 280px 300px; flex: 1; overflow: hidden; background: transparent; }
+    .panel { background: var(--bg-panel); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-right: 1px solid var(--border-glass); display: flex; flex-direction: column; overflow: hidden; }
+    .panel-header { padding: 12px 15px; border-bottom: 1px solid var(--border-glass); font-weight: 600; color: var(--text-main); display: flex; justify-content: space-between; font-size: 13px; }
+    
+    .market-search { padding: 10px; border-bottom: 1px solid var(--border-glass); }
+    .market-search input { width: 100%; padding: 8px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; color: #fff; font-size: 12px; outline: none; }
+    .market-list { flex: 1; overflow-y: auto; }
+    .market-item { display: flex; justify-content: space-between; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.02); transition: 0.1s; }
+    .market-item:hover, .market-item.active { background: rgba(255,255,255,0.05); border-left: 3px solid var(--gold); }
+    .mi-symbol { font-size: 13px; font-weight: 600; }
+    .mi-price { font-size: 13px; font-weight: 500; }
+    .mi-change { font-size: 11px; text-align: right; }
+
+    .chart-panel { display: flex; flex-direction: column; border-right: 1px solid var(--border-glass); overflow: hidden; }
+    .chart-header { padding: 12px 20px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); }
+    .chart-title { font-size: 20px; font-weight: 700; color: var(--gold); }
+    .chart-price { font-size: 24px; font-weight: 700; }
+    .chart-tools { display: flex; gap: 8px; padding: 8px 15px; border-bottom: 1px solid var(--border-glass); background: rgba(0,0,0,0.1); align-items: center; }
+    .tf-btn { background: transparent; border: none; color: var(--text-muted); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.2s; }
+    .tf-btn:hover, .tf-btn.active { color: var(--gold); background: rgba(212,175,55,0.1); }
+    .chart-container { flex: 1; position: relative; min-height: 0; }
+    #tvchart, #futuresChart { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+    .order-panel { display: flex; flex-direction: column; border-right: 1px solid var(--border-glass); }
+    .order-book-header { display: flex; justify-content: space-between; padding: 12px 15px; color: var(--text-muted); font-size: 11px; border-bottom: 1px solid var(--border-glass); }
+    .ob-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; font-size: 12px; }
+    .ob-asks { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
+    .ob-bids { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+    .ob-row { display: flex; justify-content: space-between; padding: 3px 15px; position: relative; cursor: pointer; }
+    .ob-row:hover { background: rgba(255,255,255,0.05); }
+    .ob-bar { position: absolute; top: 0; right: 0; height: 100%; opacity: 0.15; z-index: 0; transition: width 0.1s; }
+    .ob-row span { z-index: 1; position: relative; }
+    .ob-asks .price { color: var(--down); }
+    .ob-bids .price { color: var(--up); }
+    .ob-spread { text-align: center; padding: 8px; font-size: 18px; font-weight: 700; color: var(--gold); border-top: 1px solid var(--border-glass); border-bottom: 1px solid var(--border-glass); background: rgba(0,0,0,0.1); }
+
+    .form-panel { display: flex; flex-direction: column; }
+    .form-tabs { display: flex; border-bottom: 1px solid var(--border-glass); }
+    .form-tab { flex: 1; padding: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
+    .form-tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); background: rgba(212,175,55,0.05); }
+    .order-form { padding: 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+    .input-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .input-with-icon { position: relative; }
+    .input-with-icon input { padding-right: 50px; font-size: 14px; }
+    .input-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 11px; }
+    .percent-buttons { display: flex; gap: 6px; margin-bottom: 10px; }
+    .percent-buttons button { flex: 1; padding: 6px 0; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: var(--text-muted); border-radius: 6px; cursor: pointer; transition: 0.2s; }
+    .percent-buttons button:hover { color: var(--gold); border-color: var(--gold); }
+    .available-bal { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 4px; }
+
+    .bottom-panel { height: 250px; background: var(--bg-panel); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--border-glass); display: flex; flex-direction: column; }
+    .bottom-tabs { display: flex; border-bottom: 1px solid var(--border-glass); }
+    .bottom-tab { padding: 12px 25px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; font-weight: 600; }
+    .bottom-tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
+    .bottom-content { flex: 1; overflow-y: auto; display: none; }
+    .bottom-content.active { display: block; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 20px; text-align: left; border-bottom: 1px solid var(--border-glass); font-size: 12px; }
+    th { color: var(--text-muted); font-weight: 500; }
+
+    .futures-layout { display: grid; grid-template-columns: 260px 1fr 300px; gap: 2px; height: calc(100vh - 52px); background: transparent; }
+    .futures-bottom { height: 200px; background: var(--bg-panel); backdrop-filter: var(--glass-blur); border-top: 1px solid var(--border-glass); }
+
+    .settings-layout { display: flex; height: calc(100vh - 52px); max-width: 1000px; margin: 0 auto; padding: 20px; gap: 30px; }
+    .settings-sidebar { width: 250px; display: flex; flex-direction: column; gap: 5px; }
+    .settings-nav-btn { padding: 12px 20px; text-align: left; background: transparent; border: none; color: var(--text-muted); font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+    .settings-nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+    .settings-nav-btn.active { background: rgba(212,175,55,0.1); color: var(--gold); }
+    .settings-content { flex: 1; background: var(--bg-panel); backdrop-filter: var(--glass-blur); border: 1px solid var(--border-glass); border-radius: 16px; padding: 30px; overflow-y: auto; }
+    .settings-panel { display: none; }
+    .settings-panel.active { display: block; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--up); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .avatar-selector { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+    .avatar-option { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; background: rgba(255,255,255,0.05); padding: 0; text-align: center; }
+    .avatar-option:hover { border-color: var(--gold); transform: scale(1.1); }
+    .avatar-option.selected { border-color: var(--gold); background: rgba(212,175,55,0.2); }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: var(--bg-panel); backdrop-filter: var(--glass-blur); padding: 30px; border-radius: 16px; border: 1px solid var(--border-gold); width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+    .modal-header { display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 20px; font-weight: 700; color: var(--gold); }
+    .close-modal { cursor: pointer; color: var(--text-muted); font-size: 24px; }
+
+    #admin-panel { display: none; flex-direction: column; height: 100vh; background: var(--bg-dark); z-index: 999; }
+    .admin-header { background: var(--bg-panel); backdrop-filter: var(--glass-blur); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); }
+    .admin-tabs { display: flex; background: var(--bg-panel); padding: 0 20px; border-bottom: 1px solid var(--border-glass); overflow-x: auto; }
+    .admin-tab { padding: 15px 25px; background: none; border: none; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; font-size: 14px; font-weight: 600; }
+    .admin-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .admin-content { padding: 20px; overflow-y: auto; flex: 1; }
+    .admin-card { background: var(--bg-panel); backdrop-filter: var(--glass-blur); border: 1px solid var(--border-glass); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+    .admin-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-top: 15px; }
+    .user-data-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 0; font-size: 13px; }
+    .user-data-row span:first-child { color: var(--text-muted); width: 120px; font-weight: 500; }
+    .wallet-badge { background: rgba(212,175,55,0.1); border: 1px solid var(--border-gold); padding: 6px 10px; border-radius: 6px; font-family: monospace; font-size: 11px; margin-top: 6px; display: inline-block; }
+
+    .p2p-panel { padding: 20px; max-width: 1000px; margin: 0 auto; height: 100%; overflow-y: auto; }
+    .p2p-offer { background: var(--bg-panel); backdrop-filter: var(--glass-blur); border: 1px solid var(--border-glass); border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+    .p2p-offer:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .verified-badge { color: #f0b90b; font-size: 14px; margin-left: 6px; }
+
+    .toast { position: fixed; bottom: 30px; right: 30px; background: #1c1c1e; border-left: 4px solid var(--gold); color: #fff; padding: 15px 25px; border-radius: 8px; z-index: 10000; animation: slideIn 0.3s; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .toast.error { border-left-color: var(--down); }
+    .toast.success { border-left-color: var(--up); }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+    .support-btn { 
+        position: fixed; bottom: 20px; right: 20px; 
+        width: 50px; height: 50px; border-radius: 50%; 
+        background: var(--gold-gradient); 
+        display: flex; align-items: center; justify-content: center; 
+        font-size: 22px; cursor: pointer; z-index: 900; 
+        box-shadow: 0 4px 15px rgba(212,175,55,0.4); 
+        color: #000; transition: 0.2s; 
+        border: 2px solid rgba(255,255,255,0.2);
+    }
+    .support-btn:hover { transform: scale(1.1); }
+    
+    .hidden { display: none !important; }
+    .text-up { color: var(--up); } .text-down { color: var(--down); }
+    
+    .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--gold); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .leverage-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 15px; }
+    .lev-btn { padding: 8px 0; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); color: var(--text-muted); border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+    .lev-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .lev-btn.active { background: var(--gold-gradient); color: #000; border-color: var(--gold); }
+    
+    .quote-selector { padding: 6px 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 6px; color: var(--text-main); font-size: 12px; margin-left: 10px; width: 100px; }
+
+    /* Чат и Сообщество */
+    .chat-container { display: flex; flex-direction: column; height: calc(100vh - 120px); max-width: 800px; margin: 0 auto; width: 100%; padding: 20px; }
+    .chat-messages { flex: 1; overflow-y: auto; background: var(--bg-panel); backdrop-filter: var(--glass-blur); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; border: 1px solid var(--border-glass); }
+    .chat-msg { max-width: 70%; padding: 10px 15px; border-radius: 12px; font-size: 13px; }
+    .chat-msg.mine { align-self: flex-end; background: rgba(212,175,55,0.2); border: 1px solid var(--border-gold); }
+    .chat-msg.other { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); }
+    .chat-msg-author { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+    .chat-input-area { display: flex; gap: 10px; }
+    .chat-input-area input { flex: 1; }
+    
+    .post-card { background: var(--bg-panel); backdrop-filter: var(--glass-blur); border: 1px solid var(--border-glass); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+    .post-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .post-title { font-size: 16px; font-weight: bold; color: var(--gold); }
+    .post-meta { font-size: 11px; color: var(--text-muted); }
+    .post-content { font-size: 13px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- АВТОРИЗАЦИЯ -->
+<div id="welcome-screen">
+    <div class="lang-box">
+        <select class="lang-select" onchange="changeLanguage(this.value)" id="langSelectAuth"></select>
+    </div>
+    <div class="welcome-container">
+        <div class="logo-large">AUREX</div>
+        <div style="font-size:18px; color:var(--gold); margin-bottom:30px; font-weight:500;" data-i18n="welcome_sub">Premium Crypto Exchange</div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('register')" data-i18n="tab_reg">Регистрация</button>
+            <button class="auth-tab" onclick="switchAuthTab('login')" data-i18n="tab_log">Вход</button>
+        </div>
+
+        <form id="regForm" class="auth-form" onsubmit="handleRegister(event)">
+            <h3 data-i18n="reg_title">Создать аккаунт</h3>
+            <div class="input-group"><label data-i18n="email">Email</label><input type="email" id="regEmail" required></div>
+            <div class="input-group"><label data-i18n="phone">Телефон</label><input type="tel" id="regPhone" required></div>
+            <div class="input-group"><label data-i18n="password">Пароль</label><input type="password" id="regPassword" minlength="6" required></div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px;" data-i18n="reg_btn">Зарегистрироваться</button>
+        </form>
+
+        <form id="loginForm" class="auth-form hidden" onsubmit="handleLogin(event)">
+            <h3 data-i18n="log_title">Вход в систему</h3>
+            <div class="input-group"><label data-i18n="email">Email</label><input type="email" id="loginEmail" required></div>
+            <div class="input-group"><label data-i18n="password">Пароль</label><input type="password" id="loginPassword" required></div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:14px; font-size:14px;" data-i18n="log_btn">Войти</button>
+        </form>
+    </div>
+</div>
+
+<!-- ПОДТВЕРЖДЕНИЕ -->
+<div id="verify-screen" class="hidden">
+    <div class="welcome-container">
+        <div class="logo-large" style="font-size: 40px;">AUREX</div>
+        <div style="color: var(--gold); font-weight: bold; margin-bottom: 20px; font-size: 18px;" id="verifyEmailDisplay"></div>
+        <div class="auth-form">
+            <div class="input-group"><input type="text" id="verifyCodeInput" placeholder="000000" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 5px;"></div>
+            <button class="btn btn-primary" style="width: 100%; padding:12px;" onclick="verifyCode()">Подтвердить</button>
+            <div style="text-align:center; margin-top:20px; color:var(--text-muted); cursor:pointer;" onclick="backToWelcome()">← Назад</div>
+        </div>
+    </div>
+</div>
+
+<!-- ТЕРМИНАЛ -->
+<div id="dashboard">
+    <header>
+        <div class="header-left">
+            <div class="logo" onclick="logout()">AUREX</div>
+            <div class="nav-links">
+                <a href="#" id="nav-spot" class="active" onclick="showTab('spot', this)" data-i18n="nav_spot">Спот</a>
+                <a href="#" id="nav-futures" onclick="showTab('futures', this)" data-i18n="nav_futures">Фьючерсы</a>
+                <a href="#" id="nav-p2p" onclick="showTab('p2p', this)" data-i18n="nav_p2p">P2P</a>
+                <a href="#" id="nav-chat" onclick="showTab('chat', this)" data-i18n="nav_chat">Общество</a>
+                <a href="#" id="nav-wallet" onclick="showTab('wallet', this)" data-i18n="nav_wallet">Кошелек</a>
+                <a href="#" id="nav-admin-panel" class="hidden" onclick="openAdminPanel()" style="color:var(--up);" data-i18n="admin_panel">⚙️ Админ</a>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="online-badge"><div class="online-dot"></div><span id="onlineCounter">1342</span> <span data-i18n="online">онлайн</span></div>
+            <div class="user-balance" id="headerBalance">$0.00</div>
+            <div class="user-menu" onclick="showTab('settings', null)">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span id="userEmailDisplay" style="font-size:13px; font-weight:500;"></span>
+            </div>
+            <button class="btn btn-outline" onclick="logout()" style="padding:6px 12px;" data-i18n="logout">Выйти</button>
+        </div>
+    </header>
+
+    <!-- Баннер рекламы -->
+    <div id="ad-banner">
+        <div class="ad-content">
+            <img src="" id="adAvatar" class="ad-avatar">
+            <div class="ad-text">
+                <h4 id="adTitle"></h4>
+                <p id="adDesc"></p>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center;">
+            <a href="#" id="adLink" target="_blank" class="ad-btn">Перейти <span>➔</span></a>
+            <span class="ad-close" onclick="document.getElementById('ad-banner').classList.add('hidden')">✕</span>
+        </div>
+    </div>
+
+    <!-- СПОТ -->
+    <div class="terminal-layout" id="tab-spot">
+        <div class="panel">
+            <div class="panel-header" data-i18n="markets">Рынки</div>
+            <div class="market-search"><input type="text" placeholder="Поиск..." oninput="filterMarkets(this.value)" data-i18n="search_coin"></div>
+            <div class="market-list" id="marketList"></div>
+        </div>
+
+        <div class="chart-panel">
+            <div class="chart-header">
+                <div>
+                    <div class="chart-title" id="chartTitle">BTC/USDT</div>
+                    <div class="chart-price" id="chartPrice">0.00</div>
+                </div>
+                <div style="text-align:right; font-size:12px; color:var(--text-muted); display:flex; align-items:center;">
+                    <div><span data-i18n="change_24h">24h Изм:</span> <span id="statChange" class="text-up">+0.00%</span></div>
+                    <select id="spotQuoteSelector" class="quote-selector" onchange="changeSpotQuote(this.value)">
+                        <option value="USDT">USDT</option>
+                        <option value="BTC">BTC</option>
+                        <option value="ETH">ETH</option>
+                        <option value="BNB">BNB</option>
+                        <option value="USDC">USDC</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-tools">
+                <button class="tf-btn active" onclick="setTimeframe('1m', this)">1м</button>
+                <button class="tf-btn" onclick="setTimeframe('5m', this)">5м</button>
+                <button class="tf-btn" onclick="setTimeframe('15m', this)">15м</button>
+                <button class="tf-btn" onclick="setTimeframe('1h', this)">1ч</button>
+                <button class="tf-btn" onclick="setTimeframe('1d', this)">1д</button>
+            </div>
+            <div class="chart-container"><div id="tvchart"></div></div>
+        </div>
+
+        <div class="panel order-panel">
+            <div class="panel-header" data-i18n="order_book">Стакан</div>
+            <div class="order-book-header"><span data-i18n="price">Цена</span><span data-i18n="amount">Кол-во</span></div>
+            <div class="ob-container">
+                <div class="ob-asks" id="obAsks"></div>
+                <div class="ob-spread" id="obSpread">0.00</div>
+                <div class="ob-bids" id="obBids"></div>
+            </div>
+        </div>
+
+        <div class="panel form-panel">
+            <div class="form-tabs">
+                <button class="form-tab active" onclick="switchOrderTab('buy')" id="tabBuy" data-i18n="buy">Купить</button>
+                <button class="form-tab" onclick="switchOrderTab('sell')" id="tabSell" data-i18n="sell">Продать</button>
+            </div>
+            <div class="order-form">
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:5px;">
+                    <span data-i18n="available">Доступно</span>
+                    <span id="availableQuote">0.00 USDT</span>
+                </div>
+                
+                <div class="input-group">
+                    <div class="input-row"><span data-i18n="price">Цена</span><span id="quoteCoinLabel">USDT</span></div>
+                    <div class="input-with-icon"><input type="number" id="orderPrice" placeholder="0.00"><span class="input-icon" id="quoteCoinIcon">USDT</span></div>
+                </div>
+                
+                <div class="input-group">
+                    <div class="input-row"><span data-i18n="amount">Количество</span><span id="baseCoinLabel">BTC</span></div>
+                    <div class="input-with-icon"><input type="number" id="orderAmount" placeholder="0.00" oninput="calculateTotal()"><span class="input-icon" id="baseCoinLabel2">BTC</span></div>
+                    <div class="available-bal" id="availableBase">Доступно: 0 BTC</div>
+                </div>
+
+                <div class="percent-buttons">
+                    <button onclick="setPercent(25)">25%</button>
+                    <button onclick="setPercent(50)">50%</button>
+                    <button onclick="setPercent(75)">75%</button>
+                    <button onclick="setPercent(100)">100%</button>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px;">
+                    <span style="color:var(--text-muted);" data-i18n="total">Итого:</span>
+                    <span style="font-weight:700;" id="orderTotal">0.00 USDT</span>
+                </div>
+
+                <button class="btn btn-buy" id="orderBtn" onclick="placeOrder()" style="width:100%; padding:14px; font-size:15px;">Купить BTC</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ СПОТ -->
+    <div class="bottom-panel" id="bottom-spot">
+        <div class="bottom-tabs">
+            <button class="bottom-tab active" onclick="switchBottomTab('open-orders', this)" data-i18n="open_orders">Открытые ордера</button>
+            <button class="bottom-tab" onclick="switchBottomTab('trade-history', this)" data-i18n="trade_history">История торгов</button>
+            <button class="bottom-tab" onclick="switchBottomTab('assets', this)" data-i18n="assets">Активы</button>
+        </div>
+        <div class="bottom-content active" id="open-orders">
+            <table>
+                <thead><tr><th data-i18n="time">Время</th><th data-i18n="pair">Пара</th><th data-i18n="side">Сторона</th><th data-i18n="price">Цена</th><th data-i18n="amount">Кол-во</th><th data-i18n="status">Статус</th><th></th></tr></thead>
+                <tbody id="openOrdersBody"><tr><td colspan="7" style="text-align:center; color:var(--text-muted);" data-i18n="no_open_orders">Нет открытых ордеров</td></tr></tbody>
+            </table>
+        </div>
+        <div class="bottom-content" id="trade-history">
+            <table>
+                <thead><tr><th data-i18n="time">Время</th><th data-i18n="pair">Пара</th><th data-i18n="side">Сторона</th><th data-i18n="price">Цена</th><th data-i18n="amount">Кол-во</th><th data-i18n="fee">Комиссия</th></tr></thead>
+                <tbody id="tradeHistoryBody"><tr><td colspan="6" style="text-align:center; color:var(--text-muted);" data-i18n="no_history">Нет истории</td></tr></tbody>
+            </table>
+        </div>
+        <div class="bottom-content" id="assets">
+            <table>
+                <thead><tr><th data-i18n="asset">Актив</th><th data-i18n="total">Всего</th><th data-i18n="available">Доступно</th><th data-i18n="value_usdt">Стоимость (USDT)</th></tr></thead>
+                <tbody id="assetsBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ФЬЮЧЕРСЫ -->
+    <div id="tab-futures" class="hidden">
+        <div class="futures-layout">
+            <div class="panel">
+                <div class="panel-header" data-i18n="futures">Фьючерсы</div>
+                <div class="market-search" style="padding-bottom:0; display:flex; flex-direction:column; gap:5px;">
+                    <label style="font-size:11px; color:var(--text-muted);" data-i18n="base">Базовая</label>
+                    <select id="futuresBaseSelect" class="input-group" style="width:100%; padding:8px; background:rgba(0,0,0,0.3); border:1px solid var(--border-glass); color:var(--text-main); border-radius:8px; margin-bottom:5px;" onchange="changeFuturesPair()"></select>
+                    <label style="font-size:11px; color:var(--text-muted);" data-i18n="quote">Котировка</label>
+                    <select id="futuresQuoteSelect" class="input-group" style="width:100%; padding:8px; background:rgba(0,0,0,0.3); border:1px solid var(--border-glass); color:var(--text-main); border-radius:8px; margin-bottom:10px;" onchange="changeFuturesPair()">
+                        <option value="USDT">USDT</option>
+                        <option value="BTC">BTC</option>
+                        <option value="ETH">ETH</option>
+                        <option value="BNB">BNB</option>
+                        <option value="USDC">USDC</option>
+                        <option value="BUSD">BUSD</option>
+                        <option value="TUSD">TUSD</option>
+                        <option value="DAI">DAI</option>
+                        <option value="FDUSD">FDUSD</option>
+                    </select>
+                </div>
+                <div class="market-list" id="futuresMarketList"></div>
+            </div>
+            <div class="panel chart-panel">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title" id="fChartTitle">BTC/USDT Perp</div>
+                        <div class="chart-price" id="fChartPrice">0.00</div>
+                    </div>
+                </div>
+                <div class="chart-tools">
+                    <button class="tf-btn active" onclick="setFuturesTimeframe('1m', this)">1м</button>
+                    <button class="tf-btn" onclick="setFuturesTimeframe('5m', this)">5м</button>
+                    <button class="tf-btn" onclick="setFuturesTimeframe('15m', this)">15м</button>
+                    <button class="tf-btn" onclick="setFuturesTimeframe('1h', this)">1ч</button>
+                    <button class="tf-btn" onclick="setFuturesTimeframe('1d', this)">1д</button>
+                </div>
+                <div class="chart-container"><div id="futuresChart"></div></div>
+            </div>
+            <div class="panel form-panel">
+                <div class="form-tabs">
+                    <button class="form-tab active" style="color:var(--up); border-bottom-color:var(--up);" id="fTabLong" onclick="setFuturesSide('long')" data-i18n="long">Лонг</button>
+                    <button class="form-tab" style="color:var(--down); border-bottom-color:var(--down);" id="fTabShort" onclick="setFuturesSide('short')" data-i18n="short">Шорт</button>
+                </div>
+                <div class="order-form">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:5px;">
+                        <span data-i18n="available">Доступно</span>
+                        <span id="futuresAvail">0 USDT</span>
+                    </div>
+                    <div class="input-group">
+                        <div class="input-row"><span data-i18n="margin">Маржа (USDT)</span></div>
+                        <div class="input-with-icon"><input type="number" id="fMargin" placeholder="10.00" oninput="calcFutures()"><span class="input-icon">USDT</span></div>
+                    </div>
+                    <div class="input-group">
+                        <div class="input-row"><span data-i18n="leverage">Плечо</span></div>
+                        <div class="leverage-buttons" id="leverageButtons">
+                            <button class="lev-btn active" onclick="setLeverage(1, this)">1x</button>
+                            <button class="lev-btn" onclick="setLeverage(3, this)">3x</button>
+                            <button class="lev-btn" onclick="setLeverage(5, this)">5x</button>
+                            <button class="lev-btn" onclick="setLeverage(10, this)">10x</button>
+                            <button class="lev-btn" onclick="setLeverage(20, this)">20x</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-buy" id="futuresBtn" onclick="openFuturesPosition()" style="width:100%; padding:14px; font-size:15px;">Long</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- P2P -->
+    <div id="tab-p2p" class="hidden">
+        <div class="p2p-panel" style="height: calc(100vh - 120px); overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="color:var(--gold);" data-i18n="p2p_trading">P2P Торговля</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="openCreateP2P()" data-i18n="create">+ Создать</button>
+                </div>
+            </div>
+            <div id="p2pList"></div>
+        </div>
+    </div>
+
+    <!-- ЧАТ И СООБЩЕСТВО -->
+    <div id="tab-chat" class="hidden">
+        <div style="display: flex; height: calc(100vh - 120px); gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto;">
+            
+            <!-- Левая колонка: Общий чат -->
+            <div class="chat-container" style="height: 100%; padding: 0; flex: 1;">
+                <div style="font-weight: bold; font-size: 16px; color: var(--gold); margin-bottom: 10px;">Живой чат трейдеров</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Написать сообщение..." onkeypress="if(event.key === 'Enter') sendChat()">
+                    <button class="btn btn-primary" onclick="sendChat()">Отправить</button>
+                </div>
+            </div>
+
+            <!-- Правая колонка: Посты от админа -->
+            <div style="flex: 1; overflow-y: auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <div style="font-weight: bold; font-size: 16px; color: var(--gold);">Новости биржи</div>
+                    <button class="btn btn-outline" id="createPostBtn" onclick="openCreatePost()" style="display:none;">+ Пост</button>
+                </div>
+                <div id="postsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- КОШЕЛЕК -->
+    <div id="tab-wallet" class="hidden" style="padding:20px; overflow-y:auto; height:calc(100vh - 60px);">
+        <div style="max-width:900px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div class="admin-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="color:var(--text-muted); font-size:14px;" data-i18n="total_balance">Общий баланс</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <select id="currencySelector" class="quote-selector" style="width:80px; margin:0;" onchange="changeFiatCurrency(this.value)">
+                            <option value="USD">USD $</option>
+                            <option value="RUB">RUB ₽</option>
+                            <option value="EUR">EUR €</option>
+                            <option value="UAH">UAH ₴</option>
+                            <option value="KZT">KZT ₸</option>
+                        </select>
+                        <button class="btn btn-danger-soft" style="padding:4px 8px; font-size:11px;" onclick="clearTransactionHistory()" data-i18n="clear_history">Очистить</button>
+                    </div>
+                </div>
+                <div style="font-size:42px; font-weight:800; margin:10px 0; color:var(--gold);" id="walletTotal">$0.00</div>
+                <div style="display:flex; gap:10px; margin-top:25px;">
+                    <button class="btn btn-primary" onclick="openDepositModal()" style="flex:1;" data-i18n="deposit">Пополнить</button>
+                    <button class="btn btn-outline" onclick="openWithdrawModal()" style="flex:1;" data-i18n="withdraw">Вывод</button>
+                </div>
+                <h3 style="color:var(--text-main); margin-top:30px; margin-bottom:15px;" data-i18n="transaction_history">История транзакций</h3>
+                <div id="transactionHistory" style="max-height:400px; overflow-y:auto; font-size:12px;"></div>
+            </div>
+            <div class="admin-card">
+                <h3 style="color:var(--gold); margin-bottom:20px;" data-i18n="linked_wallets">Привязанные кошельки</h3>
+                <button class="btn btn-outline" onclick="connectWallet('MetaMask')" style="width:100%; margin-bottom:10px;">🦊 MetaMask</button>
+                <button class="btn btn-outline" onclick="connectWallet('Trust Wallet')" style="width:100%; margin-bottom:10px; border-color: #3375BB; color: #3375BB;">🛡 Trust Wallet</button>
+                <div class="input-group" style="margin-top:20px;"><input type="text" id="manualWalletInput" placeholder="Введите адрес (TRC20 / ERC20)"></div>
+                <button class="btn btn-primary" onclick="saveManualWallet()" style="width:100%;" data-i18n="attach_address">Прикрепить адрес</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- НАСТРОЙКИ -->
+    <div id="tab-settings" class="hidden">
+        <div class="settings-layout">
+            <div class="settings-sidebar">
+                <button class="settings-nav-btn active" onclick="switchSetTab('set-profile', this)" data-i18n="profile">👤 Профиль</button>
+                <button class="settings-nav-btn" onclick="switchSetTab('set-security', this)" data-i18n="security">🔒 Безопасность (2FA)</button>
+                <button class="settings-nav-btn" onclick="switchSetTab('set-privacy', this)" data-i18n="policy">📜 Политика</button>
+            </div>
+            <div class="settings-content">
+                <!-- Профиль -->
+                <div id="set-profile" class="settings-panel active">
+                    <h2 style="color:var(--gold); margin-bottom:25px;" data-i18n="profile_settings">Настройки профиля</h2>
+                    
+                    <div class="input-group">
+                        <label data-i18n="language">Язык интерфейса</label>
+                        <select id="setLang" onchange="changeLanguage(this.value)"></select>
+                    </div>
+
+                    <div class="input-group">
+                        <label data-i18n="theme">Тема оформления</label>
+                        <select id="setTheme" onchange="changeTheme(this.value)">
+                            <option value="gold">Aurex Gold (Dark Glass)</option>
+                            <option value="light">Light Mode (Glass)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label data-i18n="basic_avatars">Базовые аватарки</label>
+                        <div class="avatar-selector">
+                            <div class="avatar-option" onclick="selectAvatar('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50\' y=\'50\' text-anchor=\'middle\' dominant-baseline=\'central\' font-size=\'80\'>🐻</text></svg>', this)">🐻</div>
+                            <div class="avatar-option" onclick="selectAvatar('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50\' y=\'50\' text-anchor=\'middle\' dominant-baseline=\'central\' font-size=\'80\'>🐊</text></svg>', this)">🐊</div>
+                            <div class="avatar-option" onclick="selectAvatar('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50\' y=\'50\' text-anchor=\'middle\' dominant-baseline=\'central\' font-size=\'80\'>🦊</text></svg>', this)">🦊</div>
+                            <div class="avatar-option" onclick="selectAvatar('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50\' y=\'50\' text-anchor=\'middle\' dominant-baseline=\'central\' font-size=\'80\'>🦉</text></svg>', this)">🦉</div>
+                            <div class="avatar-option" onclick="selectAvatar('data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text x=\'50\' y=\'50\' text-anchor=\'middle\' dominant-baseline=\'central\' font-size=\'80\'>🐼</text></svg>', this)">🐼</div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label data-i18n="avatar_link">Или ссылка на аватарку</label>
+                        <input type="text" id="setAvatar" placeholder="https://example.com/avatar.png">
+                    </div>
+
+                    <div class="input-group"><label>Email</label><input type="email" id="setEmail"></div>
+                    <div class="input-group"><label data-i18n="phone">Телефон</label><input type="tel" id="setPhone"></div>
+                    <button class="btn btn-primary" style="width:100%;" onclick="updateSetting('all')" data-i18n="save_profile">Сохранить профиль</button>
+                    
+                    <h3 style="color:var(--text-muted); margin-top:40px; border-top:1px solid var(--border-glass); padding-top:20px; font-size:16px;" data-i18n="danger_zone">Опасная зона</h3>
+                    <button class="btn btn-danger-soft" style="width:100%; margin-top:10px;" onclick="deleteAccountSelf()" data-i18n="delete_account">Удалить аккаунт</button>
+                </div>
+
+                <!-- Безопасность -->
+                <div id="set-security" class="settings-panel">
+                    <h2 style="color:var(--gold); margin-bottom:25px;" data-i18n="security">Безопасность</h2>
+                    
+                    <div class="admin-card" style="margin-bottom:20px; background:rgba(255,255,255,0.02);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h4 style="margin-bottom:5px;" data-i18n="2fa_title">Двухфакторная аутентификация (2FA)</h4>
+                                <p style="color:var(--text-muted); font-size:12px;" data-i18n="2fa_desc">Защитите свой аккаунт с помощью Google Authenticator.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="toggle2FA" onchange="toggle2FA(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="admin-card" style="background:rgba(255,255,255,0.02);">
+                        <h4 style="margin-bottom:15px;" data-i18n="change_password">Смена пароля</h4>
+                        <div class="input-group"><label data-i18n="old_password">Старый пароль</label><input type="password" id="oldPassword" placeholder="******"></div>
+                        <div class="input-group"><label data-i18n="new_password">Новый пароль</label><input type="password" id="newPassword" placeholder="******"></div>
+                        <button class="btn btn-primary" onclick="changePassword()" data-i18n="update_password">Обновить пароль</button>
+                    </div>
+                </div>
+
+                <!-- Политика -->
+                <div id="set-privacy" class="settings-panel">
+                    <h2 style="color:var(--gold); margin-bottom:25px;" data-i18n="privacy_title">Политика конфиденциальности и Условия</h2>
+                    <div style="color:var(--text-muted); font-size:13px; line-height:1.6;">
+                        <p style="margin-bottom:15px;"><strong>1. Сбор и использование данных (KYC/AML):</strong> В рамках соблюдения международных законов о противодействии отмыванию денег (AML) и финансированию терроризма (CFT), AUREX собирает персональные данные (Email, номер телефона). Пользователь обязуется предоставлять достоверную информацию. Мы оставляем за собой право запросить верификацию личности (KYC) при крупных транзакциях.</p>
+                        <p style="margin-bottom:15px;"><strong>2. Безопасность транзакций и активов:</strong> Все переводы и торговые операции защищены протоколами шифрования SSL/TLS. Мы не храним пароли в открытом виде и настоятельно рекомендуем включать двухфакторную аутентификацию (2FA). AUREX не несет ответственности за несанкционированный доступ к аккаунту.</p>
+                        <p style="margin-bottom:15px;"><strong>3. Раскрытие третьим лицам:</strong> AUREX не продает и не передает ваши личные данные третьим лицам, за исключением случаев, предусмотренных законодательством.</p>
+                        <p style="margin-bottom:15px;"><strong>4. Управление рисками:</strong> Торговля криптовалютами связана с высокой волатильностью. Пользователь осознает риски полной или частичной потери средств.</p>
+                        <p style="margin-bottom:15px;"><strong>5. Права пользователя:</strong> Вы имеете право в любой момент запросить копию своих данных, а также потребовать полного удаления аккаунта.</p>
+                        <p>© 2024 AUREX Exchange. Все права защищены.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНЫЕ ОКНА -->
+<div class="modal" id="depositModal">
+    <div class="modal-content">
+        <div class="modal-header"><span data-i18n="deposit">Пополнение</span><span class="close-modal" onclick="closeModal('depositModal')">✕</span></div>
+        
+        <!-- Вкладки -->
+        <div class="form-tabs" style="margin-bottom:20px; border-bottom:none;">
+            <button class="form-tab active" id="depTabCrypto"
+                    onclick="this.classList.add('active'); document.getElementById('depTabCard').classList.remove('active'); document.getElementById('dep-crypto').classList.remove('hidden'); document.getElementById('dep-card').classList.add('hidden');"
+                    data-i18n="crypto">Криптовалюта</button>
+            <button class="form-tab" id="depTabCard"
+                    onclick="this.classList.add('active'); document.getElementById('depTabCrypto').classList.remove('active'); document.getElementById('dep-crypto').classList.add('hidden'); document.getElementById('dep-card').classList.remove('hidden');">
+                💳 Картой
+            </button>
+        </div>
+
+        <!-- Оплата криптой (как было) -->
+        <div id="dep-crypto">
+            <div style="margin-bottom:15px; font-size:13px; color:var(--text-muted); background:rgba(0,0,0,0.3); padding:15px; border-radius:8px; text-align:center; border:1px dashed var(--border-glass);">
+                <span data-i18n="exchange_wallet">Кошелек биржи (USDT TRC20):</span><br>
+                <span style="color:var(--gold); font-family:monospace; font-size:14px; font-weight:bold;" id="exchangeDepositAddress">Загрузка...</span>
+            </div>
+            <button class="btn btn-outline" onclick="connectMetaMaskAndSend()" style="width:100%; margin-bottom:20px;">🦊 MetaMask</button>
+            <button class="btn btn-outline" onclick="simulateTrustWallet()" style="width:100%; margin-bottom:20px; border-color: #3375BB; color: #3375BB;">🛡 Trust Wallet</button>
+            <div class="input-group"><label data-i18n="amount_usdt">Сумма (USDT)</label><input type="number" id="depositAmount" placeholder="100.00"></div>
+            <button class="btn btn-primary" style="width:100%;" onclick="doDeposit()" data-i18n="transferred">Я перевел средства</button>
+        </div>
+
+        <!-- Оплата картой — ЗАГЛУШКА -->
+        <div id="dep-card" class="hidden" style="text-align:center; padding:30px 15px;">
+            <div style="font-size:64px; margin-bottom:15px; opacity:0.7;">💳</div>
+            <div style="font-size:20px; font-weight:bold; color:var(--gold); margin-bottom:10px;">Оплата картой</div>
+            <div style="color:var(--text-muted); font-size:14px; margin-bottom:8px; line-height:1.5;">
+                Visa / Mastercard · Мгновенное зачисление USDT
+            </div>
+            <div style="display:inline-block; margin-top:15px; padding:8px 16px; border-radius:8px;
+                        background:rgba(246,70,93,0.1); border:1px solid rgba(246,70,93,0.35);
+                        color:var(--down); font-size:13px; font-weight:600;">
+                ⚠️ Функция временно недоступна
+            </div>
+            <div style="margin-top:25px;">
+                <button class="btn btn-outline" style="width:100%;"
+                        onclick="document.getElementById('depTabCrypto').click();">
+                    Пополнить криптовалютой
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="withdrawModal">
+    <div class="modal-content">
+        <div class="modal-header"><span data-i18n="withdraw">Вывод</span><span class="close-modal" onclick="closeModal('withdrawModal')">✕</span></div>
+        <div class="input-group"><label data-i18n="currency_available">Валюта и Доступно</label><select id="withdrawCurrency"></select></div>
+        <div class="input-group"><label data-i18n="wallet_address">Адрес кошелька</label><input type="text" id="withdrawAddress" placeholder="Введите адрес"></div>
+        <div class="input-group"><label data-i18n="amount">Сумма</label><input type="number" id="withdrawAmount" placeholder="0.00"></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="doWithdraw()" data-i18n="send_request">Отправить заявку</button>
+    </div>
+</div>
+
+<div class="modal" id="modal2FA">
+    <div class="modal-content">
+        <div class="modal-header"><span data-i18n="2fa_title">Настройка 2FA</span><span class="close-modal" onclick="closeModal('modal2FA')">✕</span></div>
+        <div style="text-align:center; margin-bottom:15px;"><img id="qrCodeImg" src="" alt="QR" style="border-radius:8px; border:4px solid #fff; width: 200px; height: 200px;"></div>
+        <div class="input-group"><label data-i18n="app_code">Код из приложения</label><input type="text" id="twoFaVerifyCode" placeholder="000000" maxlength="6" style="text-align:center; font-size:20px; letter-spacing:5px;"></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="verifyAndEnable2FA()" data-i18n="enable">Включить</button>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ПОДДЕРЖКИ (Живой чат) -->
+<div class="modal" id="supportModal">
+    <div class="modal-content" style="width: 600px; height: 500px; display: flex; flex-direction: column;">
+        <div class="modal-header"><span data-i18n="support">Поддержка</span><span class="close-modal" onclick="closeModal('supportModal')">✕</span></div>
+        <div class="chat-messages" id="supportChatMessages" style="flex: 1; max-height: none;"></div>
+        <div class="chat-input-area">
+            <input type="text" id="supportChatInput" placeholder="Написать в поддержку..." onkeypress="if(event.key === 'Enter') sendSupportMessage()">
+            <button class="btn btn-primary" onclick="sendSupportMessage()">Отправить</button>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО P2P CREATE -->
+<div class="modal" id="createP2PModal">
+    <div class="modal-content">
+        <div class="modal-header"><span>Создать P2P объявление</span><span class="close-modal" onclick="closeModal('createP2PModal')">✕</span></div>
+        <div class="input-group"><label>Актив</label><select id="p2pAsset"><option value="BTC">BTC</option><option value="ETH">ETH</option><option value="SOL">SOL</option><option value="BNB">BNB</option></select></div>
+        <div class="input-group"><label>Цена (USD)</label><input type="number" id="p2pPrice" placeholder="65000"></div>
+        <div class="input-group"><label>Количество</label><input type="number" id="p2pAmount" placeholder="0.5"></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="submitP2P()">Разместить</button>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ПОСТА (Админ) -->
+<div class="modal" id="createPostModal">
+    <div class="modal-content">
+        <div class="modal-header"><span>Создать пост</span><span class="close-modal" onclick="closeModal('createPostModal')">✕</span></div>
+        <div class="input-group"><label>Заголовок</label><input type="text" id="postTitle" placeholder="Заголовок новости"></div>
+        <div class="input-group"><label>Текст</label><textarea id="postContent" rows="5" placeholder="Текст поста..."></textarea></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="submitPost()">Опубликовать</button>
+    </div>
+</div>
+
+<!-- КНОПКА ПОДДЕРЖКИ -->
+<div class="support-btn" onclick="openSupportModal()" title="Поддержка">💬</div>
+
+<!-- АДМИН ПАНЕЛЬ -->
+<div id="admin-panel">
+    <div class="admin-header">
+        <div><span class="logo">AUREX</span> <span style="background:var(--down); color:#fff; padding:4px 10px; border-radius:6px; font-size:12px; margin-left:10px; font-weight:bold;">ADMIN</span></div>
+        <button class="btn btn-outline" onclick="adminLogout()" data-i18n="logout">Выйти</button>
+    </div>
+    <div class="admin-tabs">
+        <button class="admin-tab active" onclick="openAdminTab('analytics')" data-i18n="analytics">📊 Аналитика</button>
+        <button class="admin-tab" onclick="openAdminTab('pending')" data-i18n="requests">Заявки</button>
+        <button class="admin-tab" onclick="openAdminTab('deposits')" data-i18n="deposits">Пополнения</button>
+        <button class="admin-tab" onclick="openAdminTab('users')" data-i18n="users">Пользователи</button>
+        <button class="admin-tab" onclick="openAdminTab('support')" data-i18n="support">Поддержка</button>
+        <button class="admin-tab" onclick="openAdminTab('ads')" data-i18n="ads">Реклама</button>
+        <button class="admin-tab" onclick="openAdminTab('settings')" data-i18n="settings">Настройки</button>
+    </div>
+    <div class="admin-content" id="adminContent"></div>
+</div>
+
+<script>
+// ==================== КОНФИГУРАЦИЯ ====================
+const API_URL = 'https://aurex-server-6gfy.onrender.com';
+const SUPABASE_URL = 'https://uigfryghaqyekhzwgxgx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpZ2ZyeWdoYXF5ZWtoendneGd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODIwMTMsImV4cCI6MjEwODE1ODAxM30.60b70ZRkh_f9aP2tcxG13Lehpzin3jEs9W1fd8jfusQ';
+let db = null;
+try { if (window.supabase) db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (e) { console.error("DB error", e); }
+
+let token = localStorage.getItem('aurex_token') || null;
+let currentUser = null;
+let currentPair = 'BTCUSDT';
+let baseCoin = 'BTC';
+let quoteCoin = 'USDT';
+let currentLang = 'ru';
+let currentFiat = 'USD';
+let orderSide = 'buy';
+let futuresSide = 'long';
+let currentLeverage = 1;
+let currentTimeframe = '1m';
+let fTimeframe = '1m';
+let priceWs = null, fPriceWs = null;
+let tvWidget = null, tvFuturesWidget = null;
+let temp2FASecret = '';
+let temp2FAObj = null;
+
+// маппинг таймфреймов для TradingView (в минутах)
+const TV_INTERVAL = { '1m': '1', '5m': '5', '15m': '15', '1h': '60', '1d': 'D' };
+
+const FIAT_RATES = { USD: 1, RUB: 95.5, EUR: 0.92, UAH: 41.2, KZT: 450.0 };
+
+// БАЗА 80+ МОНЕТ (СПИСОК)
+const allPairs = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'TRXUSDT', 'TONUSDT', 'AVAXUSDT', 'SHIBUSDT', 'DOTUSDT', 'LINKUSDT', 'LTCUSDT', 'UNIUSDT', 'APTUSDT', 'SUIUSDT', 'NEARUSDT', 'MATICUSDT', 'BCHUSDT', 'ETCUSDT', 'ICPUSDT', 'FILUSDT', 'IMXUSDT', 'HBARUSDT', 'OPUSDT', 'INJUSDT', 'GRTUSDT', 'RNDRUSDT', 'STXUSDT', 'MKRUSDT', 'AAVEUSDT', 'QNTUSDT', 'ARUSDT', 'FLOWUSDT', 'CHZUSDT', 'SANDUSDT', 'MANAUSDT', 'AXSUSDT', 'EOSUSDT', 'XTZUSDT', 'THETAUSDT', 'KAVAUSDT', 'RUNEUSDT', 'CRVUSDT', 'EGLDUSDT', 'SNXUSDT', 'FTMUSDT', 'ZECUSDT', 'DASHUSDT', 'ATOMUSDT', 'ALGOUSDT', 'VETUSDT', 'XLMUSDT', 'SEIUSDT', 'TIAUSDT', 'MINAUSDT', 'ROSEUSDT', 'GALAUSDT', 'WOOUSDT', 'DYDXUSDT', 'ENSUSDT', 'CAKEUSDT', '1INCHUSDT', 'ZILUSDT', 'IOTAUSDT', 'NEOUSDT', 'XTZUSDT'];
+
+// ==================== ЯЗЫКИ ====================
+const translations = {
+    ru: { welcome_sub: "Профессиональная криптобиржа", tab_reg: "Регистрация", tab_log: "Вход", reg_title: "Создать аккаунт", email: "Email", phone: "Телефон", password: "Пароль", reg_btn: "Зарегистрироваться", log_title: "Вход", log_btn: "Войти", nav_spot: "Спот", nav_futures: "Фьючерсы", nav_p2p: "P2P", nav_chat: "Общество", nav_wallet: "Кошелек", logout: "Выйти", buy: "Купить", sell: "Продать", markets: "Рынки", search_coin: "Поиск...", change_24h: "24ч Изм:", order_book: "Стакан", price: "Цена", amount: "Кол-во", available: "Доступно", total: "Итого:", open_orders: "Открытые ордера", trade_history: "История торгов", assets: "Активы", time: "Время", pair: "Пара", side: "Сторона", status: "Статус", no_open_orders: "Нет открытых ордеров", no_history: "Нет истории", asset: "Актив", value_usdt: "Стоимость (USDT)", futures: "Фьючерсы", base: "Базовая", quote: "Котировка", long: "Лонг", short: "Шорт", margin: "Маржа (USDT)", leverage: "Плечо", p2p_trading: "P2P Торговля", create: "+ Создать", total_balance: "Общий баланс", clear_history: "Очистить", deposit: "Пополнить", withdraw: "Вывод", transaction_history: "История транзакций", linked_wallets: "Привязанные кошельки", attach_address: "Прикрепить адрес", profile: "👤 Профиль", security: "🔒 Безопасность (2FA)", policy: "📜 Политика", profile_settings: "Настройки профиля", language: "Язык", theme: "Тема", basic_avatars: "Аватарки", avatar_link: "Или ссылка", save_profile: "Сохранить профиль", danger_zone: "Опасная зона", delete_account: "Удалить аккаунт", "2fa_title": "2FA", "2fa_desc": "Защитите аккаунт", change_password: "Смена пароля", old_password: "Старый пароль", new_password: "Новый пароль", update_password: "Обновить", privacy_title: "Политика", crypto: "Криптовалюта", exchange_wallet: "Кошелек биржи (USDT TRC20):", amount_usdt: "Сумма (USDT)", transferred: "Перевел", currency_available: "Валюта", wallet_address: "Адрес кошелька", send_request: "Отправить", app_code: "Код", enable: "Включить", analytics: "📊 Аналитика", requests: "Заявки", deposits: "Пополнения", users: "Пользователи", support: "Поддержка", ads: "Реклама", settings: "Настройки", online: "онлайн", message: "Сообщение", admin_panel: "⚙️ Админ" },
+    en: { welcome_sub: "Professional Crypto Exchange", tab_reg: "Register", tab_log: "Login", reg_title: "Create Account", email: "Email", phone: "Phone", password: "Password", reg_btn: "Register", log_title: "Login", log_btn: "Login", nav_spot: "Spot", nav_futures: "Futures", nav_p2p: "P2P", nav_chat: "Community", nav_wallet: "Wallet", logout: "Logout", buy: "Buy", sell: "Sell", markets: "Markets", search_coin: "Search...", change_24h: "24h Change:", order_book: "Order Book", price: "Price", amount: "Amount", available: "Available", total: "Total:", open_orders: "Open Orders", trade_history: "History", assets: "Assets", time: "Time", pair: "Pair", side: "Side", status: "Status", no_open_orders: "No orders", no_history: "No history", asset: "Asset", value_usdt: "Value (USDT)", futures: "Futures", base: "Base", quote: "Quote", long: "Long", short: "Short", margin: "Margin", leverage: "Leverage", p2p_trading: "P2P Trading", create: "+ Create", total_balance: "Total Balance", clear_history: "Clear", deposit: "Deposit", withdraw: "Withdraw", transaction_history: "Transactions", linked_wallets: "Linked Wallets", attach_address: "Attach address", profile: "👤 Profile", security: "🔒 Security", policy: "📜 Policy", profile_settings: "Settings", language: "Language", theme: "Theme", basic_avatars: "Avatars", avatar_link: "Or link", save_profile: "Save", danger_zone: "Danger", delete_account: "Delete", "2fa_title": "2FA", "2fa_desc": "Protect account", change_password: "Change Password", old_password: "Old", new_password: "New", update_password: "Update", privacy_title: "Privacy", crypto: "Crypto", exchange_wallet: "Wallet (TRC20):", amount_usdt: "Amount", transferred: "Transferred", currency_available: "Currency", wallet_address: "Address", send_request: "Send", app_code: "Code", enable: "Enable", analytics: "📊 Analytics", requests: "Requests", deposits: "Deposits", users: "Users", support: "Support", ads: "Ads", settings: "Settings", online: "online", message: "Message", admin_panel: "⚙️ Admin" }
+};
+
+const LANG_LIST = [
+    { code: 'ru', name: 'Русский 🇷🇺' }, { code: 'en', name: 'English 🇺🇸' },
+    { code: 'zh', name: '中文 🇨🇳' }, { code: 'ar', name: 'العربية 🇸🇦' },
+    { code: 'de', name: 'Deutsch 🇩🇪' }, { code: 'fr', name: 'Français 🇫🇷' },
+    { code: 'es', name: 'Español 🇪🇸' }, { code: 'pt', name: 'Português 🇵🇹' },
+    { code: 'it', name: 'Italiano 🇮🇹' }, { code: 'ja', name: '日本語 🇯🇵' },
+    { code: 'ko', name: '한국어 🇰🇷' }, { code: 'tr', name: 'Türkçe 🇹🇷' },
+    { code: 'hi', name: 'हिन्दी 🇮🇳' }, { code: 'uk', name: 'Українська 🇺🇦' },
+    { code: 'pl', name: 'Polski 🇵🇱' }, { code: 'vi', name: 'Tiếng Việt 🇻🇳' }
+];
+
+// ==================== УТИЛИТЫ ====================
+function showToast(msg, type) {
+    const t = document.createElement('div');
+    t.className = 'toast ' + (type || '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+}
+
+function populateLanguageSelectors() {
+    const authSelect = document.getElementById('langSelectAuth');
+    const settingsSelect = document.getElementById('setLang');
+    if (!authSelect || !settingsSelect) return;
+    const options = LANG_LIST.map(l => `<option value="${l.code}">${l.name}</option>`).join('');
+    authSelect.innerHTML = options;
+    settingsSelect.innerHTML = options;
+}
+
+function changeLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('aurex_lang', lang);
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
+        else if (translations['en'] && translations['en'][key]) el.textContent = translations['en'][key];
+    });
+    const authSelect = document.getElementById('langSelectAuth');
+    const settingsSelect = document.getElementById('setLang');
+    if (authSelect) authSelect.value = lang;
+    if (settingsSelect) settingsSelect.value = lang;
+    const fBtn = document.getElementById('futuresBtn');
+    if (fBtn) fBtn.textContent = futuresSide === 'long' ? (translations[lang].long || 'Long') : (translations[lang].short || 'Short');
+    updateOrderFormUI();
+    updateTotalBalance();
+    // пересоздаём виджеты с новым locale
+    if (tvWidget) initChart();
+    if (tvFuturesWidget) initFuturesChart();
+}
+
+function changeFiatCurrency(fiat) { currentFiat = fiat; updateTotalBalance(); }
+function changeTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('aurex_theme', theme);
+    if(document.getElementById('setTheme')) document.getElementById('setTheme').value = theme;
+}
+
+function switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.add('hidden'));
+    if (tab === 'register') { document.querySelectorAll('.auth-tab')[0].classList.add('active'); document.getElementById('regForm').classList.remove('hidden'); }
+    else { document.querySelectorAll('.auth-tab')[1].classList.add('active'); document.getElementById('loginForm').classList.remove('hidden'); }
+}
+
+// ==================== АВТОРИЗАЦИЯ ====================
+async function handleRegister(e) {
+    e.preventDefault();
+    const email = document.getElementById('regEmail').value.trim().toLowerCase();
+    const phone = document.getElementById('regPhone').value;
+    const password = document.getElementById('regPassword').value;
+    
+    try {
+        const res = await fetch(`${API_URL}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, phone, password })
+        });
+        const data = await res.json();
+        if (data.error) return showToast(data.error, 'error');
+        
+        showToast('Аккаунт создан! Войдите.', 'success');
+        switchAuthTab('login');
+        
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPhone').value = '';
+        document.getElementById('regPassword').value = '';
+    } catch (err) {
+        showToast('Ошибка сервера', 'error');
+    }
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
+    
+    try {
+        const res = await fetch(`${API_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.error) return showToast(data.error, 'error');
+        
+        token = data.token;
+        localStorage.setItem('aurex_token', token);
+        currentUser = data.user;
+        if (currentUser.is_admin) openAdminPanel();
+        else openDashboard();
+    } catch (err) {
+        showToast('Ошибка сервера. Попробуйте позже.', 'error');
+    }
+}
+
+async function loadUserData() {
+    if (!token) return;
+    try {
+        const res = await fetch(`${API_URL}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.error) { logout(); return; }
+        currentUser = data;
+        updateUI();
+    } catch (e) { console.error(e); }
+}
+
+function updateUI() {
+    if (!currentUser) return;
+    document.getElementById('userEmailDisplay').textContent = currentUser.email;
+    document.getElementById('userAvatar').textContent = currentUser.email[0].toUpperCase();
+    updateTotalBalance();
+    renderAssetsTable();
+    if (currentUser.is_admin) {
+        document.getElementById('nav-admin-panel').classList.remove('hidden');
+        document.getElementById('createPostBtn').style.display = 'block';
+    }
+}
+
+function logout() { localStorage.removeItem('aurex_token'); location.reload(); }
+function adminLogout() { localStorage.removeItem('aurex_token'); location.reload(); }
+function backToWelcome() { location.reload(); }
+
+// ==================== ТОРГОВЛЯ ====================
+async function placeOrder() {
+    if (!token || !currentUser) return showToast('Войдите в аккаунт', 'error');
+    const price = parseFloat(document.getElementById('orderPrice').value);
+    const amount = parseFloat(document.getElementById('orderAmount').value);
+    if (!price || !amount) return showToast('Заполните поля', 'error');
+
+    try {
+        const res = await fetch(`${API_URL}/api/order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ pair: currentPair, side: orderSide, price, amount })
+        });
+        const data = await res.json();
+        if (data.error) return showToast(data.error, 'error');
+        showToast('Ордер размещен!', 'success');
+        loadUserData();
+        renderOrderBook();
+    } catch (e) { showToast('Ошибка', 'error'); }
+}
+
+async function renderOrderBook() {
+    try {
+        const res = await fetch(`${API_URL}/api/orderbook/${currentPair}`);
+        const orders = await res.json();
+        const asks = orders.filter(o => o.side === 'sell').sort((a, b) => a.price - b.price).slice(0, 15);
+        const bids = orders.filter(o => o.side === 'buy').sort((a, b) => b.price - a.price).slice(0, 15);
+        
+        const asksHtml = asks.map(o => `<div class="ob-row" onclick="setPrice(${o.price})"><div class="ob-bar" style="width:${Math.min(100, o.amount * 10)}%; background:var(--down);"></div><span class="price">${parseFloat(o.price).toFixed(4)}</span><span>${parseFloat(o.amount).toFixed(3)}</span></div>`).reverse().join('');
+        const bidsHtml = bids.map(o => `<div class="ob-row" onclick="setPrice(${o.price})"><div class="ob-bar" style="width:${Math.min(100, o.amount * 10)}%; background:var(--up);"></div><span class="price">${parseFloat(o.price).toFixed(4)}</span><span>${parseFloat(o.amount).toFixed(3)}</span></div>`).join('');
+        
+        document.getElementById('obAsks').innerHTML = asksHtml || '<div style="padding:10px; text-align:center; color:var(--text-muted);">Нет заявок</div>';
+        document.getElementById('obBids').innerHTML = bidsHtml || '<div style="padding:10px; text-align:center; color:var(--text-muted);">Нет заявок</div>';
+        const spread = asks.length > 0 && bids.length > 0 ? (asks[0].price - bids[0].price).toFixed(4) : '0.00';
+        document.getElementById('obSpread').textContent = spread;
+    } catch (e) { console.error(e); }
+}
+
+function setPrice(price) { document.getElementById('orderPrice').value = parseFloat(price).toFixed(4); calculateTotal(); }
+function switchOrderTab(side) {
+    orderSide = side;
+    document.getElementById('tabBuy').classList.toggle('active', side === 'buy');
+    document.getElementById('tabSell').classList.toggle('active', side === 'sell');
+    const btn = document.getElementById('orderBtn');
+    btn.textContent = (side === 'buy' ? 'Купить ' : 'Продать ') + baseCoin;
+    btn.className = `btn ${side === 'buy' ? 'btn-buy' : 'btn-sell'}`;
+}
+function calculateTotal() {
+    const p = parseFloat(document.getElementById('orderPrice').value) || 0;
+    const a = parseFloat(document.getElementById('orderAmount').value) || 0;
+    document.getElementById('orderTotal').textContent = (p * a).toFixed(4) + ' ' + quoteCoin;
+}
+function setPercent(pct) {
+    if (!currentUser) return;
+    const price = parseFloat(document.getElementById('orderPrice').value) || 0;
+    if (price === 0) return;
+    const quoteField = quoteCoin === 'USDT' ? 'balance' : `${quoteCoin.toLowerCase()}_balance`;
+    let maxAmount = orderSide === 'buy' ? ((currentUser[quoteField] || 0) / price) : (currentUser[`${baseCoin.toLowerCase()}_balance`] || 0);
+    document.getElementById('orderAmount').value = (maxAmount * (pct / 100)).toFixed(6);
+    calculateTotal();
+}
+
+function changeSpotPair(pair) {
+    currentPair = pair;
+    const quotes = ['USDT', 'BTC', 'ETH', 'BNB', 'USDC'];
+    let foundQuote = 'USDT';
+    for (let q of quotes) if (pair.endsWith(q)) { foundQuote = q; break; }
+    baseCoin = pair.slice(0, -foundQuote.length);
+    quoteCoin = foundQuote;
+    
+    document.getElementById('spotQuoteSelector').value = quoteCoin;
+    document.getElementById('baseCoinLabel').textContent = baseCoin;
+    document.getElementById('baseCoinLabel2').textContent = baseCoin;
+    document.getElementById('orderBtn').textContent = (orderSide === 'buy' ? 'Купить ' : 'Продать ') + baseCoin;
+    updateCurrentPairUI();
+    updateOrderFormUI();
+    renderOrderBook();
+    startPriceWebSocket();
+    // пересоздаём виджет с новым символом
+    initChart();
+}
+
+function changeSpotQuote(newQuote) {
+    quoteCoin = newQuote;
+    currentPair = baseCoin + quoteCoin;
+    document.getElementById('baseCoinLabel').textContent = baseCoin;
+    document.getElementById('baseCoinLabel2').textContent = baseCoin;
+    document.getElementById('orderBtn').textContent = (orderSide === 'buy' ? 'Купить ' : 'Продать ') + baseCoin;
+    updateCurrentPairUI();
+    updateOrderFormUI();
+    renderOrderBook();
+    startPriceWebSocket();
+    initChart();
+}
+
+// ==================== P2P ====================
+async function loadP2P() {
+    try {
+        const res = await fetch(`${API_URL}/api/p2p`);
+        const data = await res.json();
+        let html = data.length === 0 ? '<div style="text-align:center; padding:20px; color:var(--text-muted);">Нет предложений</div>' : data.map(o => `
+            <div class="p2p-offer">
+                <div>
+                    <strong style="color:var(--gold);">${o.seller_email} <span class="verified-badge">✔</span></strong><br>
+                    <span style="color:var(--text-muted); font-size:12px;">Продает ${o.amount} ${o.asset} по ${o.price} USD</span>
+                </div>
+                <button class="btn btn-buy" onclick="buyP2P('${o.id}', '${o.seller_email}', '${o.asset}', ${o.price}, ${o.amount})">Купить</button>
+            </div>
+        `).join('');
+        document.getElementById('p2pList').innerHTML = html;
+    } catch (e) { console.error(e); }
+}
+
+function openCreateP2P() { openModal('createP2PModal'); }
+
+async function submitP2P() {
+    const asset = document.getElementById('p2pAsset').value;
+    const price = parseFloat(document.getElementById('p2pPrice').value);
+    const amount = parseFloat(document.getElementById('p2pAmount').value);
+    if (!price || !amount) return showToast('Заполните данные', 'error');
+    
+    try {
+        const res = await fetch(`${API_URL}/api/p2p`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ asset, price, amount })
+        });
+        if (res.ok) {
+            closeModal('createP2PModal');
+            showToast('Объявление создано', 'success');
+            loadP2P();
+        } else { showToast('Ошибка', 'error'); }
+    } catch (e) { showToast('Ошибка', 'error'); }
+}
+
+async function buyP2P(id, seller, asset, price, amount) {
+    const total = amount * price;
+    if ((currentUser.balance || 0) < total) return showToast('Недостаточно USDT', 'error');
+    
+    const field = asset === 'BTC' ? 'btc_balance' : asset === 'ETH' ? 'eth_balance' : asset === 'SOL' ? 'sol_balance' : 'bnb_balance';
+    await db.from('users').update({ balance: currentUser.balance - total, [field]: (currentUser[field] || 0) + amount }).eq('email', currentUser.email);
+    await db.from('p2p_offers').delete().eq('id', id);
+    await db.from('transactions').insert({ email: currentUser.email, type: 'p2p_buy', amount, currency: asset, status: 'approved', details: `${seller} | ${price} USD` });
+    showToast(`Куплено ${amount} ${asset}`, 'success');
+    loadP2P(); loadUserData();
+}
+
+// ==================== ЧАТ И ПОСТЫ ====================
+async function loadChat() {
+    try {
+        const res = await fetch(`${API_URL}/api/chat`);
+        const data = await res.json();
+        const box = document.getElementById('chatMessages');
+        if (!box) return;
+        box.innerHTML = data.map(m => `
+            <div class="chat-msg ${m.author_email === currentUser.email ? 'mine' : 'other'}">
+                <div class="chat-msg-author">${m.author_email}</div>
+                <div>${m.message}</div>
+            </div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
+    } catch (e) { console.error(e); }
+}
+
+async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    try {
+        await fetch(`${API_URL}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ message: msg })
+        });
+        input.value = '';
+        loadChat();
+    } catch (e) { showToast('Ошибка', 'error'); }
+}
+
+async function loadPosts() {
+    try {
+        const res = await fetch(`${API_URL}/api/posts`);
+        const data = await res.json();
+        document.getElementById('postsList').innerHTML = data.map(p => `
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="post-title">${p.title}</div>
+                    <div class="post-meta">${p.author_email} | ${new Date(p.created_at).toLocaleDateString()}</div>
+                </div>
+                <div class="post-content">${p.content}</div>
+            </div>
+        `).join('') || '<div style="color:var(--text-muted);">Пока нет новостей</div>';
+    } catch (e) { console.error(e); }
+}
+
+function openCreatePost() { openModal('createPostModal'); }
+
+async function submitPost() {
+    const title = document.getElementById('postTitle').value;
+    const content = document.getElementById('postContent').value;
+    if (!title || !content) return showToast('Заполните данные', 'error');
+    
+    try {
+        await fetch(`${API_URL}/api/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ title, content })
+        });
+        closeModal('createPostModal');
+        showToast('Пост создан', 'success');
+        loadPosts();
+    } catch (e) { showToast('Ошибка', 'error'); }
+}
+
+// ==================== ГРАФИКИ (TradingView Widget) ====================
+// Легковесные WebSocket-ы для обновления цены в шапке (не для отрисовки свечей)
+function startPriceWebSocket() {
+    if (priceWs) priceWs.close();
+    try {
+        priceWs = new WebSocket(`wss://stream.binance.com:9443/ws/${currentPair.toLowerCase()}@kline_${currentTimeframe}`);
+        priceWs.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.k) {
+                const price = parseFloat(msg.k.c);
+                const el = document.getElementById('chartPrice');
+                if (el) el.textContent = price.toFixed(4);
+            }
+        };
+        priceWs.onclose = () => { setTimeout(startPriceWebSocket, 3000); };
+    } catch(e) {}
+}
+
+function startFuturesPriceWebSocket() {
+    if (fPriceWs) fPriceWs.close();
+    try {
+        fPriceWs = new WebSocket(`wss://stream.binance.com:9443/ws/${currentPair.toLowerCase()}@kline_${fTimeframe}`);
+        fPriceWs.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.k) {
+                const price = parseFloat(msg.k.c);
+                const el = document.getElementById('fChartPrice');
+                if (el) el.textContent = price.toFixed(4);
+            }
+        };
+        fPriceWs.onclose = () => { setTimeout(startFuturesPriceWebSocket, 3000); };
+    } catch(e) {}
+}
+
+// СПОТ — TradingView Widget
+function initChart() {
+    const container = document.getElementById('tvchart');
+    if (!container) return;
+    container.innerHTML = '';
+    if (typeof TradingView === 'undefined') {
+        // фоллбэк на lightweight-charts, если TV не загрузился
+        if (typeof LightweightCharts !== 'undefined') {
+            const lc = LightweightCharts.createChart(container, {
+                layout: { background: { color: 'transparent' }, textColor: '#a0a0a0' },
+                grid: { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+                rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
+                timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: true, secondsVisible: false },
+            });
+            const s = lc.addCandlestickSeries({ upColor: '#0ecb81', downColor: '#f6465d', borderVisible: false, wickUpColor: '#0ecb81', wickDownColor: '#f6465d' });
+            fetchBinance('/api/v3/klines', `?symbol=${currentPair}&interval=${currentTimeframe}&limit=100`).then(klines => {
+                if (klines) s.setData(klines.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })));
+            });
+        }
+        return;
+    }
+    tvWidget = new TradingView.widget({
+        container_id: 'tvchart',
+        autosize: true,
+        symbol: 'BINANCE:' + currentPair,
+        interval: TV_INTERVAL[currentTimeframe] || '1',
+        timezone: 'Etc/UTC',
+        theme: 'dark',
+        style: '1',
+        locale: currentLang === 'ru' ? 'ru' : 'en',
+        toolbar_bg: '#050505',
+        enable_publishing: false,
+        allow_symbol_change: false,
+        hide_side_toolbar: false,
+        withdateranges: true,
+        details: false,
+        studies: ['Volume@tv-basicstudies'],
+    });
+}
+
+// ФЬЮЧЕРСЫ — TradingView Widget
+function initFuturesChart() {
+    const container = document.getElementById('futuresChart');
+    if (!container) return;
+    container.innerHTML = '';
+    if (typeof TradingView === 'undefined') {
+        if (typeof LightweightCharts !== 'undefined') {
+            const lc = LightweightCharts.createChart(container, {
+                layout: { background: { color: 'transparent' }, textColor: '#a0a0a0' },
+                grid: { vertLines: { color: 'rgba(255,255,255,0.05)' }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
+                rightPriceScale: { borderColor: 'rgba(255,255,255,0.1)' },
+                timeScale: { borderColor: 'rgba(255,255,255,0.1)', timeVisible: true, secondsVisible: false },
+            });
+            const s = lc.addCandlestickSeries({ upColor: '#0ecb81', downColor: '#f6465d', borderVisible: false, wickUpColor: '#0ecb81', wickDownColor: '#f6465d' });
+            fetchBinance('/api/v3/klines', `?symbol=${currentPair}&interval=${fTimeframe}&limit=100`).then(klines => {
+                if (klines) s.setData(klines.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })));
+            });
+        }
+        return;
+    }
+    tvFuturesWidget = new TradingView.widget({
+        container_id: 'futuresChart',
+        autosize: true,
+        symbol: 'BINANCE:' + currentPair + '.P',
+        interval: TV_INTERVAL[fTimeframe] || '1',
+        timezone: 'Etc/UTC',
+        theme: 'dark',
+        style: '1',
+        locale: currentLang === 'ru' ? 'ru' : 'en',
+        toolbar_bg: '#050505',
+        enable_publishing: false,
+        allow_symbol_change: false,
+        hide_side_toolbar: false,
+        withdateranges: true,
+        details: false,
+        studies: ['Volume@tv-basicstudies'],
+    });
+}
+
+async function fetchBinance(endpoint, params = '') {
+    try {
+        const res = await fetch(`https://data-api.binance.vision${endpoint}${params}`);
+        if (res.ok) return await res.json();
+    } catch (e) {}
+    return null;
+}
+
+function setTimeframe(tf, btn) {
+    currentTimeframe = tf;
+    document.querySelectorAll('.chart-tools .tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    startPriceWebSocket();
+    initChart();
+}
+
+function setFuturesTimeframe(tf, btn) {
+    fTimeframe = tf;
+    const tools = btn.parentElement;
+    if (tools) tools.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    startFuturesPriceWebSocket();
+    initFuturesChart();
+}
+
+async function fetchMarketList() {
+    const data = await fetchBinance('/api/v3/ticker/24hr');
+    if (data) {
+        const list = data.filter(d => allPairs.includes(d.symbol)).map(t => ({ symbol: t.symbol, price: parseFloat(t.lastPrice), change: parseFloat(t.priceChangePercent) }));
+        let html = list.map(t => {
+            const base = t.symbol.replace(quoteCoin, '');
+            const isActive = t.symbol === currentPair ? 'active' : '';
+            return `<div class="market-item ${isActive}" onclick="changeSpotPair('${t.symbol}')"><div><div class="mi-symbol">${base}/${quoteCoin}</div></div><div><div class="mi-price">${t.price < 1 ? t.price.toFixed(5) : t.price.toLocaleString()}</div><div class="mi-change ${t.change >= 0 ? 'text-up' : 'text-down'}">${t.change >= 0 ? '+' : ''}${t.change.toFixed(2)}%</div></div></div>`;
+        }).join('');
+        document.getElementById('marketList').innerHTML = html;
+        document.getElementById('futuresMarketList').innerHTML = html;
+    }
+}
+
+function populateFuturesSelectors() {
+    const baseSel = document.getElementById('futuresBaseSelect');
+    const quoteSel = document.getElementById('futuresQuoteSelect');
+    if (!baseSel) return;
+    baseSel.innerHTML = allPairs.map(p => p.replace('USDT', '')).map(b => `<option value="${b}">${b}</option>`).join('');
+    baseSel.value = baseCoin;
+    quoteSel.value = quoteCoin;
+}
+
+function changeFuturesPair() {
+    const baseSel = document.getElementById('futuresBaseSelect');
+    const quoteSel = document.getElementById('futuresQuoteSelect');
+    if (!baseSel || !quoteSel) return;
+    currentPair = baseSel.value + quoteSel.value;
+    baseCoin = baseSel.value;
+    quoteCoin = quoteSel.value;
+    updateCurrentPairUI();
+    updateOrderFormUI();
+    startFuturesPriceWebSocket();
+    initFuturesChart();
+}
+
+function filterMarkets(q) {
+    document.querySelectorAll('.market-item').forEach(el => { el.style.display = el.innerHTML.toLowerCase().includes(q.toLowerCase()) ? 'flex' : 'none'; });
+}
+
+function updateCurrentPairUI() {
+    document.getElementById('chartTitle').textContent = baseCoin + '/' + quoteCoin;
+    document.getElementById('fChartTitle').textContent = baseCoin + '/' + quoteCoin + ' Perp';
+}
+
+function updateOrderFormUI() {
+    if (!currentUser) return;
+    const quoteField = quoteCoin === 'USDT' ? 'balance' : `${quoteCoin.toLowerCase()}_balance`;
+    document.getElementById('availableQuote').textContent = (currentUser[quoteField] || 0).toFixed(4) + ' ' + quoteCoin;
+    document.getElementById('availableBase').textContent = `Доступно: ${(currentUser[`${baseCoin.toLowerCase()}_balance`] || 0).toFixed(4)} ${baseCoin}`;
+    document.getElementById('futuresAvail').textContent = (currentUser.balance || 0).toFixed(2);
+    document.getElementById('quoteCoinLabel').textContent = quoteCoin;
+    document.getElementById('quoteCoinIcon').textContent = quoteCoin;
+}
+
+function updateTotalBalance() {
+    if (!currentUser) return;
+    let total = currentUser.balance || 0;
+    total += (currentUser.btc_balance || 0) * 65000;
+    total += (currentUser.eth_balance || 0) * 3500;
+    total += (currentUser.sol_balance || 0) * 150;
+    total += (currentUser.bnb_balance || 0) * 600;
+    const rate = FIAT_RATES[currentFiat] || 1;
+    const symbol = currentFiat === 'USD' ? '$' : (currentFiat === 'EUR' ? '€' : (currentFiat === 'RUB' ? '₽' : ''));
+    const el1 = document.getElementById('headerBalance');
+    const el2 = document.getElementById('walletTotal');
+    if (el1) el1.textContent = symbol + (total * rate).toLocaleString('en-US', { minimumFractionDigits: 2 });
+    if (el2) el2.textContent = symbol + (total * rate).toLocaleString('en-US', { minimumFractionDigits: 2 });
+}
+
+function renderAssetsTable() {
+    if (!currentUser) return;
+    const coins = [{ name: 'USDT', field: 'balance' }, { name: 'BTC', field: 'btc_balance' }, { name: 'ETH', field: 'eth_balance' }, { name: 'SOL', field: 'sol_balance' }, { name: 'BNB', field: 'bnb_balance' }];
+    let html = coins.map(c => {
+        const val = currentUser[c.field] || 0;
+        return val > 0 ? `<tr><td>${c.name}</td><td>${val.toFixed(6)}</td><td>${val.toFixed(6)}</td><td>~ ${(val * (c.name === 'USDT' ? 1 : 100)).toFixed(2)}</td></tr>` : '';
+    }).join('');
+    document.getElementById('assetsBody').innerHTML = html || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">-</td></tr>';
+}
+
+// ==================== ФЬЮЧЕРСЫ ====================
+function setFuturesSide(side) {
+    futuresSide = side;
+    document.getElementById('fTabLong').classList.toggle('active', side === 'long');
+    document.getElementById('fTabShort').classList.toggle('active', side === 'short');
+    document.getElementById('futuresBtn').textContent = side === 'long' ? 'Long' : 'Short';
+    document.getElementById('futuresBtn').className = `btn ${side === 'long' ? 'btn-buy' : 'btn-sell'}`;
+}
+function setLeverage(lev, btn) {
+    currentLeverage = lev;
+    document.querySelectorAll('#leverageButtons .lev-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+}
+function calcFutures() { /* заглушка для oninput */ }
+async function openFuturesPosition() {
+    const margin = parseFloat(document.getElementById('fMargin').value);
+    if (!margin || margin <= 0) return showToast('Введите маржу', 'error');
+    if ((currentUser.balance || 0) < margin) return showToast('Недостаточно USDT', 'error');
+    await db.from('users').update({ balance: currentUser.balance - margin }).eq('email', currentUser.email);
+    showToast(`${futuresSide.toUpperCase()} позиция открыта`, 'success');
+    loadUserData();
+}
+
+// ==================== КОШЕЛЕК ====================
+function openDepositModal() {
+    document.getElementById('exchangeDepositAddress').textContent = localStorage.getItem('aurex_admin_wallet') || 'TXyAurexExchangeWallet123456789';
+    openModal('depositModal');
+}
+async function doDeposit() {
+    const amt = parseFloat(document.getElementById('depositAmount').value);
+    if (!amt || amt <= 0) return showToast('Введите сумму', 'error');
+    await db.from('transactions').insert({ email: currentUser.email, type: 'crypto_deposit', amount: amt, currency: 'USDT', status: 'pending', details: 'Ждет подтверждения' });
+    showToast('Заявка создана. Ожидайте подтверждения.', 'success');
+    closeModal('depositModal');
+}
+function openWithdrawModal() {
+    const sel = document.getElementById('withdrawCurrency');
+    sel.innerHTML = '';
+    let hasFunds = false;
+    [{ id: 'balance', name: 'USDT' }, { id: 'btc_balance', name: 'BTC' }, { id: 'eth_balance', name: 'ETH' }].forEach(f => {
+        if ((currentUser[f.id] || 0) > 0) { sel.innerHTML += `<option value="${f.name}">${f.name}</option>`; hasFunds = true; }
+    });
+    if (!hasFunds) return showToast('Нет средств', 'error');
+    openModal('withdrawModal');
+}
+async function doWithdraw() {
+    const currency = document.getElementById('withdrawCurrency').value;
+    const addr = document.getElementById('withdrawAddress').value.trim();
+    const amt = parseFloat(document.getElementById('withdrawAmount').value);
+    if (!addr || !amt) return showToast('Заполните поля', 'error');
+    let field = currency === 'USDT' ? 'balance' : currency.toLowerCase() + '_balance';
+    if ((currentUser[field] || 0) < amt) return showToast('Недостаточно средств', 'error');
+    await db.from('users').update({ [field]: currentUser[field] - amt }).eq('email', currentUser.email);
+    await db.from('transactions').insert({ email: currentUser.email, type: 'withdraw', amount: amt, currency: currency, status: 'pending', details: addr });
+    showToast('Заявка на вывод создана', 'success');
+    closeModal('withdrawModal'); loadUserData();
+}
+function clearTransactionHistory() { showToast('История очищена', 'success'); }
+function connectWallet(w) { showToast('Подключение ' + w + '...', 'success'); }
+function saveManualWallet() { const v = document.getElementById('manualWalletInput').value; if(v) showToast('Адрес сохранён', 'success'); }
+function connectMetaMaskAndSend() { showToast('MetaMask недоступен в демо', 'error'); }
+function simulateTrustWallet() { showToast('Trust Wallet недоступен в демо', 'error'); }
+function switchDepositTab() { /* только крипто */ }
+
+// ==================== ПОДДЕРЖКА (ЛС) ====================
+function openSupportModal() {
+    if (!currentUser) return showToast('Войдите в аккаунт', 'error');
+    openModal('supportModal');
+    loadSupportMessages();
+}
+async function loadSupportMessages() {
+    try {
+        const res = await fetch(`${API_URL}/api/messages/${currentUser.email}/support@aurex.io`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const box = document.getElementById('supportChatMessages');
+        box.innerHTML = data.map(m => `
+            <div class="chat-msg ${m.sender_email === currentUser.email ? 'mine' : 'other'}">
+                <div class="chat-msg-author">${m.sender_email}</div>
+                <div>${m.message}</div>
+            </div>
+        `).join('');
+        box.scrollTop = box.scrollHeight;
+    } catch (e) {}
+}
+async function sendSupportMessage() {
+    const input = document.getElementById('supportChatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    try {
+        await fetch(`${API_URL}/api/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ receiver_email: 'support@aurex.io', message: msg })
+        });
+        input.value = '';
+        loadSupportMessages();
+    } catch (e) { showToast('Ошибка', 'error'); }
+}
+
+// ==================== НАСТРОЙКИ / UI ====================
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function switchSetTab(tabId, btn) {
+    document.querySelectorAll('.settings-nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active'); document.getElementById(tabId).classList.add('active');
+}
+function selectAvatar(url, el) {
+    document.getElementById('setAvatar').value = url;
+    document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected'));
+    el.classList.add('selected');
+}
+function toggle2FA(isChecked) {
+    if (isChecked) {
+        try {
+            const rawSecret = new Uint8Array(20); crypto.getRandomValues(rawSecret);
+            const secret = OTPAuth.Secret.fromRaw(rawSecret);
+            temp2FAObj = new OTPAuth.TOTP({ issuer: "AUREX", label: currentUser.email, algorithm: "SHA1", digits: 6, period: 30, secret: secret });
+            temp2FASecret = secret.base32;
+            const uri = temp2FAObj.toString();
+            document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;
+            openModal('modal2FA'); document.getElementById('toggle2FA').checked = false;
+        } catch(e) { showToast('Ошибка 2FA', 'error'); document.getElementById('toggle2FA').checked = false; }
+    } else {
+        db.from('users').update({ is_2fa_enabled: false }).eq('email', currentUser.email).then(() => showToast('2FA отключена', 'error'));
+    }
+}
+async function verifyAndEnable2FA() {
+    const code = document.getElementById('twoFaVerifyCode').value;
+    if (!code) return showToast('Введите код', 'error');
+    if (temp2FAObj.validate({ token: code, window: 1 }) !== null) {
+        await db.from('users').update({ is_2fa_enabled: true }).eq('email', currentUser.email);
+        document.getElementById('toggle2FA').checked = true;
+        closeModal('modal2FA'); showToast('2FA включена!', 'success');
+    } else { showToast('Неверный код', 'error'); }
+}
+async function updateSetting(field) {
+    let updates = { email: document.getElementById('setEmail').value, phone: document.getElementById('setPhone').value, avatar: document.getElementById('setAvatar').value };
+    await db.from('users').update(updates).eq('email', currentUser.email);
+    showToast('Сохранено', 'success'); loadUserData();
+}
+async function changePassword() {
+    showToast('Функция смены пароля в разработке', 'error');
+}
+async function deleteAccountSelf() { if(confirm('Удалить аккаунт?')) { await db.from('users').delete().eq('email', currentUser.email); logout(); } }
+
+// ==================== ВКЛАДКИ ====================
+function showTab(tab, navEl) {
+    ['spot', 'futures', 'p2p', 'chat', 'wallet', 'settings'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`); if(el) el.classList.add('hidden');
+        const nav = document.getElementById(`nav-${t}`); if(nav) nav.classList.remove('active');
+    });
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    if (navEl) navEl.classList.add('active');
+    if (tab === 'wallet') loadUserData();
+    if (tab === 'p2p') loadP2P();
+    if (tab === 'chat') { loadChat(); loadPosts(); }
+    if (tab === 'spot') {
+        document.getElementById('bottom-spot').classList.remove('hidden');
+        renderOrderBook();
+        setTimeout(() => { initChart(); }, 80);
+    } else {
+        document.getElementById('bottom-spot').classList.add('hidden');
+    }
+    if (tab === 'futures') {
+        setTimeout(() => { initFuturesChart(); }, 80);
+    }
+}
+function switchBottomTab(tabId, btn) {
+    document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.bottom-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active'); document.getElementById(tabId).classList.add('active');
+}
+
+// ==================== АДМИНКА ====================
+function openAdminPanel() {
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'flex';
+    openAdminTab('analytics');
+}
+function openAdminTab(tab) {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.admin-tab').forEach(t => {
+        if(t.textContent.includes(tab === 'analytics' ? 'Аналитика' : tab === 'pending' ? 'Заявки' : tab === 'deposits' ? 'Пополнения' : tab === 'users' ? 'Пользователи' : tab === 'support' ? 'Поддержка' : tab === 'ads' ? 'Реклама' : 'Настройки')) t.classList.add('active');
+    });
+    if (tab === 'analytics') loadAdminAnalytics();
+    else if (tab === 'pending') loadAdminPending();
+    else if (tab === 'deposits') loadAdminDeposits();
+    else if (tab === 'users') loadAdminUsers();
+    else if (tab === 'support') loadAdminSupport();
+    else if (tab === 'ads') loadAdminAds();
+    else loadAdminSettings();
+}
+function loadAdminAnalytics() {
+    const bots = Math.floor(Math.random() * 200) + 50;
+    document.getElementById('adminContent').innerHTML = `
+        <div class="admin-card">
+            <h3 style="color:var(--gold); margin-bottom:20px;">📊 Онлайн</h3>
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
+                <div style="background:rgba(0,0,0,0.3); padding:20px; text-align:center; border-radius:12px;"><div style="font-size:12px; color:var(--text-muted);">Всего (Показ)</div><div style="font-size:32px; font-weight:bold;">${bots + 1250}</div></div>
+                <div style="background:rgba(14,203,129,0.1); padding:20px; text-align:center; border-radius:12px; border:1px solid var(--up);"><div style="font-size:12px; color:var(--up);">Реальные</div><div style="font-size:32px; font-weight:bold; color:var(--up);">1250</div></div>
+                <div style="background:rgba(246,70,93,0.1); padding:20px; text-align:center; border-radius:12px; border:1px solid var(--down);"><div style="font-size:12px; color:var(--down);">Боты</div><div style="font-size:32px; font-weight:bold; color:var(--down);">${bots}</div></div>
+            </div>
+        </div>
+    `;
+}
+async function loadAdminPending() {
+    const { data } = await db.from('pending_requests').select('*').eq('status', 'pending');
+    document.getElementById('adminContent').innerHTML = (data || []).map(r => `
+        <div class="admin-card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div><strong>${r.email}</strong><br>Код: ${r.code}</div>
+            <button class="btn btn-buy" onclick="approveReq('${r.email}')">Одобрить</button>
+        </div>
+    `).join('') || 'Нет заявок';
+}
+async function approveReq(email) {
+    await db.from('pending_requests').update({ status: 'approved' }).eq('email', email);
+    const { data } = await db.from('pending_requests').select('*').eq('email', email).single();
+    await db.from('users').insert({ email, phone: data.phone, password: data.password, balance: 0 });
+    await db.from('pending_requests').delete().eq('email', email);
+    showToast('Одобрено', 'success'); loadAdminPending();
+}
+async function loadAdminDeposits() {
+    const { data } = await db.from('transactions').select('*').eq('status', 'pending').eq('type', 'crypto_deposit');
+    document.getElementById('adminContent').innerHTML = (data || []).map(tx => `
+        <div class="admin-card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div><strong>${tx.email}</strong><br>Сумма: $${tx.amount}<br><small>${new Date(tx.created_at).toLocaleString()}</small></div>
+            <div><button class="btn btn-buy" onclick="approveDeposit('${tx.id}', '${tx.email}', ${tx.amount})">Одобрить</button></div>
+        </div>
+    `).join('') || 'Нет заявок';
+}
+async function approveDeposit(id, email, amount) {
+    const { data: user } = await db.from('users').select('balance').eq('email', email).single();
+    await db.from('users').update({ balance: (user.balance || 0) + amount }).eq('email', email);
+    await db.from('transactions').update({ status: 'approved' }).eq('id', id);
+    showToast('Пополнение одобрено', 'success'); loadAdminDeposits();
+}
+async function loadAdminUsers() {
+    const { data } = await db.from('users').select('*');
+    document.getElementById('adminContent').innerHTML = (data || []).map(u => `
+        <div class="admin-card" style="margin-bottom:15px;">
+            <h4 style="color:var(--gold);">${u.email}</h4>
+            <div>Пароль: <b>${u.password}</b> | Тел: ${u.phone}</div>
+            <div>Баланс: $${u.balance} | BTC: ${u.btc_balance}</div>
+        </div>
+    `).join('');
+}
+async function loadAdminSupport() {
+    const { data } = await db.from('support_tickets').select('*').order('created_at', { ascending: false });
+    document.getElementById('adminContent').innerHTML = (data || []).map(t => `<div class="admin-card"><b>${t.email}</b>: ${t.message}</div>`).join('') || 'Нет тикетов';
+}
+function loadAdminAds() {
+    const ad = JSON.parse(localStorage.getItem('aurex_ad') || '{}');
+    document.getElementById('adminContent').innerHTML = `
+        <div class="admin-card">
+            <h3 style="color:var(--gold);">Реклама</h3>
+            <div class="input-group"><label>Заголовок</label><input type="text" id="adTitle" value="${ad.title || 'Telegram'}"></div>
+            <div class="input-group"><label>Ссылка</label><input type="text" id="adLink" value="${ad.link || 'https://t.me/'}"></div>
+            <div class="input-group"><label>Картинка</label><input type="text" id="adAvatar" value="${ad.avatar || ''}"></div>
+            <button class="btn btn-primary" onclick="saveAd()">Сохранить</button>
+        </div>
+    `;
+}
+function saveAd() {
+    localStorage.setItem('aurex_ad', JSON.stringify({ enabled: true, title: document.getElementById('adTitle').value, link: document.getElementById('adLink').value, avatar: document.getElementById('adAvatar').value }));
+    showToast('Реклама обновлена', 'success');
+}
+function loadAdminSettings() {
+    document.getElementById('adminContent').innerHTML = `
+        <div class="admin-card">
+            <h3 style="color:var(--gold);">Кошелек для пополнений</h3>
+            <div class="input-group"><input type="text" id="adminWalletInput" value="${localStorage.getItem('aurex_admin_wallet') || 'TXyAurexExchangeWallet123456789'}"></div>
+            <button class="btn btn-primary" onclick="localStorage.setItem('aurex_admin_wallet', document.getElementById('adminWalletInput').value); showToast('Сохранено', 'success');">Сохранить</button>
+        </div>
+    `;
+}
+
+// ==================== ЗАПУСК ====================
+window.onload = async () => { 
+    populateLanguageSelectors();
+    changeLanguage(localStorage.getItem('aurex_lang') || 'ru'); 
+    changeTheme(localStorage.getItem('aurex_theme') || 'gold');
+    populateFuturesSelectors();
+    
+    if (token) {
+        await loadUserData();
+        if (!currentUser) return;
+        if (currentUser.is_admin) openAdminPanel();
+        else openDashboard();
+    }
+    
+    setInterval(fetchMarketList, 5000);
+    setInterval(renderOrderBook, 3000);
+    setInterval(() => {
+        const onlineEl = document.getElementById('onlineCounter');
+        if (onlineEl) onlineEl.textContent = 1250 + Math.floor(Math.random() * 150);
+    }, 3000);
+};
+
+function openDashboard() {
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('verify-screen').classList.add('hidden');
+    document.getElementById('dashboard').style.display = 'flex';
+    
+    showTab('spot', document.getElementById('nav-spot'));
+    fetchMarketList();
+    renderOrderBook();
+    startPriceWebSocket();
+    startFuturesPriceWebSocket();
+    
+    setTimeout(() => { 
+        initChart();
+    }, 150);
+    setTimeout(() => { 
+        initFuturesChart();
+    }, 200);
+}
+</script>
+</body>
+</html>
