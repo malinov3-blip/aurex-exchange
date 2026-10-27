@@ -1629,10 +1629,11 @@ function loadAdminAnalytics() {
     `;
 }
 async function loadAdminPending() {
-    const { data } = await db.from('pending_requests').select('*').eq('status', 'pending');
+    const { data, error } = await db.from('pending_requests').select('*').eq('status', 'pending');
+    if (error) { console.error(error); return; }
     document.getElementById('adminContent').innerHTML = (data || []).map(r => `
         <div class="admin-card" style="display:flex; justify-content:space-between; align-items:center;">
-            <div><strong>${r.email}</strong><br>Код: ${r.code}</div>
+            <div><strong>${r.email}</strong><br>Тел: ${r.phone || 'Нет'}</div>
             <button class="btn btn-buy" onclick="approveReq('${r.email}')">Одобрить</button>
         </div>
     `).join('') || 'Нет заявок';
